@@ -1,1 +1,1 @@
-# Earthquake_prediction_ANN
+# Earthquake Prediction Model using ANN
