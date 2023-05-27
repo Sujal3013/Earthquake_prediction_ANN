@@ -12,17 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 data=pd.read_csv('earthquake_data.csv')
-
-data.columns
-data2=data
-data2.columns
-
-data.head()
-
-data.describe()
-
 data=data[['Date','Time','Latitude','Longitude','Depth','Magnitude']]
-data.head()
 
 """Scaling date and time"""
 
@@ -46,95 +36,11 @@ final_data=data.drop(['Date','Time'],axis=1)
 final_data=final_data[final_data.TimeStamp!='ValueError']
 final_data.head()
 
-"""# Visualizing the given dataset"""
 
-data.shape
-
-plt.hist(data['Magnitude'])
-plt.xlabel('Magnitude Size')
-plt.ylabel('Number of Occurences')
-
-import seaborn as sns
-
-sns.countplot(x="Magnitude Type", data=data2)
-plt.ylabel('Frequency')
-plt.title('Magnitude Type VS Frequency')
-print(" local magnitude (ML), surface-wave magnitude (Ms), body-wave magnitude (Mb), moment magnitude (Mw)")
-
-import mpl_toolkits
-mpl_toolkits.__path__.append('/usr/lib/python2.7/dist-packages/mpl_toolkits/')
-from mpl_toolkits.basemap import Basemap
-
-def get_marker_color(magnitude):
-    if magnitude < 6.2:
-        return ('go')
-    elif magnitude < 7.5:
-        return ('yo')
-    else:
-        return ('ro')
-
-plt.figure(figsize=(14,10))
-
-eq_map = Basemap(projection='robin', resolution = 'l',
-              lat_0=0, lon_0=-130)
-eq_map.drawcoastlines()
-eq_map.drawcountries()
-eq_map.fillcontinents(color = 'gray')
-eq_map.drawmapboundary()
-eq_map.drawmeridians(np.arange(0, 360, 30))
-eq_map.drawparallels(np.arange(-90, 90, 30))
- 
-# read longitude, latitude and magnitude
-lons = data2['Longitude'].values
-lats = data2['Latitude'].values
-magnitudes = data2['Magnitude'].values
-timestrings = data2['Date'].tolist()
-    
-min_marker_size = 0.5
-for lon, lat, mag in zip(lons, lats, magnitudes):
-    x,y = eq_map(lon, lat)
-    msize = mag # * min_marker_size
-    marker_string = get_marker_color(mag)
-    eq_map.plot(x, y, marker_string, markersize=msize)
-    
-title_string = "Earthquakes of Magnitude 5.5 or Greater\n"
-title_string += "%s - %s" % (timestrings[0][:10], timestrings[-1][:10])
-plt.title(title_string)
-
-plt.show()
-
-plt.figure(figsize=(25,25))
-data2['date'] = data2['Date'].apply(lambda x: pd.to_datetime(x))
-data2['year'] = data2['date'].apply(lambda x: str(x).split('-')[0])
-sns.set(font_scale=1.0)
-sns.countplot(x="year", data=data2)
-plt.ylabel('Number Of Earthquakes')
-plt.title('Number of Earthquakes In Each Year')
-
-x = data2['year'].unique()
-y = data2['year'].value_counts()
-
-count = []
-for i in range(len(x)):
-    key = x[i]
-    count.append(y[key])
-
-plt.figure(figsize=(30,25))
-
-plt.scatter(x, count)
-plt.xlabel('Year')
-plt.ylabel('Number of Earthquakes')
-plt.title('Earthquakes Per year from 1965 to 2016')
-plt.show()
-
-"""# Magnitude Classes
-
+""" Magnitude Classes
 Disastrous: M > =8
-
 Major: 7 < =M < 7.9
-
 Strong: 6 < = M < 6.9
-
 Moderate: 5.5 < =M < 5.9
 """
 
@@ -142,10 +48,6 @@ data.loc[data['Magnitude'] >=8, 'Class'] = 'Disastrous'
 data.loc[ (data['Magnitude'] >= 7) & (data['Magnitude'] < 7.9), 'Class'] = 'Major'
 data.loc[ (data['Magnitude'] >= 6) & (data['Magnitude'] < 6.9), 'Class'] = 'Strong'
 data.loc[ (data['Magnitude'] >= 5.5) & (data['Magnitude'] < 5.9), 'Class'] = 'Moderate'
-
-sns.countplot(x="Class", data=data)
-plt.ylabel('Frequency')
-plt.title('Magnitude Class VS Frequency')
 
 """# Splitting data and Creating the Model"""
 
@@ -161,9 +63,6 @@ from keras.models import Sequential
 from keras.layers import Dense,Activation,Embedding,Flatten,LeakyReLU,BatchNormalization,Dropout
 from keras.activations import relu, sigmoid
 from keras.layers import LeakyReLU
-
-from keras.models import Sequential
-from keras.layers import Dense
 
 # 3 dense layers, 16, 16, 2 nodes each
 
@@ -189,6 +88,8 @@ param_grid = {
     "loss": ['squared_hinge']
 }
 
+'''Datatype correction in training and testing sets'''
+
 X_train = np.asarray(X_train).astype(np.float32)
 y_train = np.asarray(y_train).astype(np.float32)
 X_test = np.asarray(X_test).astype(np.float32)
@@ -197,16 +98,7 @@ y_test = np.asarray(y_test).astype(np.float32)
 grid = GridSearchCV(estimator=model, param_grid=param_grid, n_jobs=-1)
 grid_result = grid.fit(X_train, y_train)
 
-best_params = grid_result.best_params_
-best_params
-
-print("Best: %f using %s"%(grid_result.best_score_,grid_result.best_params_))
-
-means = grid_result.cv_results_['mean_test_score']
-stds = grid_result.cv_results_['std_test_score']
-params = grid_result.cv_results_['params']
-for mean, stdev, param in zip(means, stds, params):
-    print("%f (%f) with: %r" % (mean, stdev, param))
+"""Training on best hyperparameters"""
 
 model= Sequential()
 
@@ -218,6 +110,3 @@ model.compile(optimizer='Adadelta',loss='squared_hinge',metrics=['accuracy'])
 model.fit(X_train,y_train,batch_size=20,epochs=10,verbose=1,validation_data=(X_test,y_test))
 
 [test_loss,test_acc]=model.evaluate(X_test,y_test)
-
-print("Evaluation result on Test Data : Loss = {}, accuracy = {}".format(test_loss, test_acc))
-
